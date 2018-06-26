@@ -55,11 +55,13 @@ init(#{endpoints := Endpoints, % [{"localhost", 9092}]
 start_subscriber({InTopic, {group, GroupId}}, Opts) ->
     GroupConfig = maps:get(group_config, Opts, default_group_config()),
     ConsumerConfig = maps:get(consumer_config, Opts, default_consumer_config()),
+    _GroupSubscriber = {GSModule, GSInitState} = maps:get(group_subscriber, Opts,
+                                                          default_group_subscriber()),
     {ok, PID} = brod_group_subscriber:start_link(?KAFKA_CLIENT, GroupId, [InTopic],
                                                  GroupConfig, ConsumerConfig,
                                                  _MessageType = message,
-                                                 _CallbackModule  = ?MODULE,
-                                                 _CallbackInitArg = #{}),
+                                                 _CallbackModule  = GSModule,
+                                                 _CallbackInitArg = GSInitState),
     {brod_group_subscriber, PID};
 start_subscriber({InTopic, InPartitions}, Opts) when is_list(InPartitions) ->
     ConsumerConfig = maps:get(consumer_config, Opts, default_consumer_config()),
@@ -82,6 +84,9 @@ default_group_config() ->
 
 default_consumer_config() ->
     [{begin_offset, earliest}].
+
+default_group_subscriber() ->
+    {?MODULE, #{}}.
 
 
 %% brod_topic_subscriber:cb_fun()
