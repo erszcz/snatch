@@ -54,23 +54,25 @@ init(#{endpoints := Endpoints, % [{"localhost", 9092}]
 start_subscriber({InTopic, {group, GroupId}}, Opts) ->
     GroupConfig = maps:get(group_config, Opts, default_group_config()),
     ConsumerConfig = maps:get(consumer_config, Opts, default_consumer_config()),
+    MessageType = maps:get(message_type, Opts, default_message_type()),
     _GroupSubscriber = {GSModule, GSInitState} = maps:get(group_subscriber, Opts,
                                                           default_group_subscriber()),
     {ok, PID} = brod_group_subscriber:start_link(?KAFKA_CLIENT, GroupId, [InTopic],
                                                  GroupConfig, ConsumerConfig,
-                                                 _MessageType = message,
+                                                 MessageType,
                                                  _CallbackModule  = GSModule,
                                                  _CallbackInitArg = GSInitState),
     {brod_group_subscriber, PID};
 start_subscriber({InTopic, InPartitions}, Opts) when is_list(InPartitions) ->
     ConsumerConfig = maps:get(consumer_config, Opts, default_consumer_config()),
+    MessageType = maps:get(message_type, Opts, default_message_type()),
     CommitOffsets = [],
     {ok, PID} = brod_topic_subscriber:start_link(?KAFKA_CLIENT,
                                                  InTopic,
                                                  InPartitions,
                                                  ConsumerConfig,
                                                  CommitOffsets,
-                                                 _MessageType = message,
+                                                 MessageType,
                                                  fun subscriber_callback/3,
                                                  _CallbackState = self()),
     {brod_topic_subscriber, PID}.
@@ -83,6 +85,9 @@ default_group_config() ->
 
 default_consumer_config() ->
     [{begin_offset, earliest}].
+
+default_message_type() ->
+    message.
 
 default_group_subscriber() ->
     {?MODULE, #{}}.
