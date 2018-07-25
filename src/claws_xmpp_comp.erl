@@ -251,6 +251,11 @@ handle_event(info, {xmlstreamelement, Packet}, _State, Data) ->
     {keep_state, Data, [{next_event, cast, {received, Packet}}]};
 handle_event(_, {send, _, _, _} = Send, State, _Data) when State =/= ready ->
     drop(Send, State);
+handle_event(_, {received, _} = Received, State, _Data)
+  when stream_init =/= State,
+       authenticate =/= State,
+       ready =/= State ->
+    drop(Received, State);
 handle_event(Type, Content, State, Data) ->
     ?MODULE:State(Type, Content, Data).
 
